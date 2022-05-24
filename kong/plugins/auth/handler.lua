@@ -13,7 +13,7 @@ local function authenticate(plugin_conf, auth_header)
       ssl_verify = false,
       headers = {
           ["Content-Type"] = "application/json",
-          ["Authorization"] = auth_header }
+          [ plugin_conf.request_header ] = auth_header }
   })
 
   if not result then
