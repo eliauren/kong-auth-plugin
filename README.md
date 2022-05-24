@@ -69,3 +69,16 @@ This results in:
 
 [badge-travis-url]: https://travis-ci.org/Kong/kong-plugin/branches
 [badge-travis-image]: https://travis-ci.com/Kong/kong-plugin.svg?branch=master
+
+## ⚙️ Implementation Task
+
+This plugin contains the minimum requirements for the following exercise :
+
+```
+Create a Kong authentication plugin. Upon receiving a request in Kong the plugin will reach out to a remote server, with a header from the incoming request. If the remote server returns a “200 OK”, the request is allowed to be proxied, on anything else the client should get the proper “40x” response.
+
+The plugin must admit at least these 2 configuration options on its schema:
+- Auth server URL
+- Request header name
+There should be at least 1 integration test.
+```

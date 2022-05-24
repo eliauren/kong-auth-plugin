@@ -1,69 +1,41 @@
-
+local http = require "resty.http"
 
 local plugin = {
-  PRIORITY = 1000, -- set the plugin priority, which determines plugin execution order
-  VERSION = "0.1", -- version in X.Y.Z format. Check hybrid-mode compatibility requirements.
+  PRIORITY = 1000,
+  VERSION = "0.1",
 }
 
+local function authenticate(plugin_conf, auth_header)
+  local httpc = http:new()
 
-function plugin:init_worker()
-  kong.log.debug("saying hi from the 'init_worker' handler")
+  local result, error = httpc:request_uri(plugin_conf.authentication_url, {
+    method = "GET",
+      ssl_verify = false,
+      headers = {
+          ["Content-Type"] = "application/json",
+          ["Authorization"] = auth_header }
+  })
+
+  if not result then
+    kong.log.err("Failed to reach authentication url", err)
+    return kong.response.exit(500)
+  end
+
+  if result.status ~= 200 then
+    kong.log.err("Authentication url repsonse status : ", result.status)
+    return kong.response.exit(result.status, result.body)
+  end
 end
-
-
-
---[[ runs in the 'ssl_certificate_by_lua_block'
--- IMPORTANT: during the `certificate` phase neither `route`, `service`, nor `consumer`
--- will have been identified, hence this handler will only be executed if the plugin is
--- configured as a global plugin!
-function plugin:certificate(plugin_conf)
-
-  -- your custom code here
-  kong.log.debug("saying hi from the 'certificate' handler")
-
-end --]]
-
-
-
---[[ runs in the 'rewrite_by_lua_block'
--- IMPORTANT: during the `rewrite` phase neither `route`, `service`, nor `consumer`
--- will have been identified, hence this handler will only be executed if the plugin is
--- configured as a global plugin!
-function plugin:rewrite(plugin_conf)
-
-  -- your custom code here
-  kong.log.debug("saying hi from the 'rewrite' handler")
-
-end --]]
-
-
 
 function plugin:access(plugin_conf)
-  kong.log.inspect(plugin_conf)
-  kong.service.request.set_header(plugin_conf.request_header, "this is on a request")
+  local auth_header = kong.request.get_header(plugin_conf.request_header)
+
+  if not auth_header then
+    return kong.response.exit(401, { message = "Unauthorized" })
+  end
+
+  authenticate(plugin_conf, auth_header)
+  kong.service.request.set_header(plugin_conf.request_header, auth_header)
 end
-
-
-function plugin:header_filter(plugin_conf)
-  kong.response.set_header(plugin_conf.response_header, "this is on the response")
-end
-
-
---[[ runs in the 'body_filter_by_lua_block'
-function plugin:body_filter(plugin_conf)
-
-  -- your custom code here
-  kong.log.debug("saying hi from the 'body_filter' handler")
-
-end --]]
-
-
---[[ runs in the 'log_by_lua_block'
-function plugin:log(plugin_conf)
-
-  -- your custom code here
-  kong.log.debug("saying hi from the 'log' handler")
-
-end --]]
 
 return plugin
